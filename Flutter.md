@@ -657,3 +657,378 @@ class MyApp extends StatelessWidget {
 }
 ```
 
+#### 导航父子页面的跳转返回
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(MaterialApp(title: '导航演示01', home: FirstScreen()));
+}
+
+class FirstScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('导航页面')),
+      body: Center(
+          child: RaisedButton(
+        child: Text('查看商品详情页'),
+        onPressed: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => SecondScreen()));
+        },//MaterialPageRoute 路由组件
+      )),
+    );
+  }
+}
+
+class SecondScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: Text('我的商品详情页')),
+        body: Center(
+            child: RaisedButton(
+                child: Text('返回'),
+                onPressed: () {
+                  Navigator.pop(context);
+                })));
+  }
+}
+```
+
+#### 导航的参数传递和接受
+
+ 构造函数参数应使用命名参数，命名参数中的必要参数要添加@required标注，这样有利于静态代码分析器进行检查。
+
+另外，在继承widget时，第一个参数通常应该是Key，另外，如果Widget需要接收子Widget，那么child或children参数通常应被放在参数列表的最后。同样是按照惯例，Widget的属性应尽可能的被声明为final，防止被意外改变。
+
+```dart
+import 'package:flutter/material.dart';
+
+class Product {
+  final String title;
+  final String description;
+  Product(this.title, this.description);
+}
+
+void main() {
+  runApp(MaterialApp(
+    title: '数据传输demo',
+    home: ProductList(
+        products: List.generate(20, (i) => Product('商品$i', '编号为:$i'))),
+  ));
+}
+
+class ProductList extends StatelessWidget {
+  final List<Product> products;
+  ProductList({Key key, @required this.products}) : super(key: key);
+  //构造函数的写法
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('商品列表')),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(products[index].title),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder:(context)=>ProductDetail(product:products[index])));
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetail extends StatelessWidget {
+  final Product product;
+  ProductDetail({Key key, @required this.product}):super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title:Text('${product.title}')),
+      body:Center(
+        child: Text('${product.description}'),),
+    );
+  }}
+
+```
+
+#### 页面跳转并返回数据
+
+找小姐姐例子
+
+```dart
+import 'package:flutter/material.dart';
+
+void main(){
+  runApp(MaterialApp(
+    title:'页面跳转返回数据',
+    home:FirstPage()
+  ));
+}
+
+class FirstPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar:AppBar(title:Text("找小姐姐要电话")),
+      body:Center(
+        child: RouteButton(),
+      )
+    );
+  }
+}
+
+//跳转的Button
+class RouteButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return RaisedButton(
+      onPressed:(){
+          _navigateToXiaoJieJie(context);
+      },
+      child: Text('去找小姐姐'),
+    );
+  }
+
+  _navigateToXiaoJieJie(BuildContext context) async{ //async是启用异步方法
+
+    final result = await Navigator.push(//等待
+      context, 
+      MaterialPageRoute(builder: (context)=> XiaoJieJie())
+      );
+
+      Scaffold.of(context).showSnackBar(SnackBar(content:Text('$result')));
+  }
+}
+
+class XiaoJieJie extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar:AppBar(
+        title:Text('我是小姐姐')
+      ),
+      body:Center(
+        child:Column(
+          children: <Widget>[
+            RaisedButton(
+              child: Text('大长腿小姐姐'),
+              onPressed: (){
+                Navigator.pop(context,'大长腿:1511008888');
+              },
+            ) ,
+            RaisedButton(
+              child: Text('小蛮腰小姐姐'),
+              onPressed: (){
+                Navigator.pop(context,'大长腿:1511009999');
+              },
+            ) ,
+          ],
+        ) 
+      ) ,
+    );
+  }
+}
+```
+
+
+
+#### 静态资源和项目图片的处理
+
+如果想配置项目资源文件，就需要使用`pubspec.yaml`文件，需要把资源文件在这里声明。
+
+比如在项目根目录下新建了一个`images`文件夹，文件夹下面放了一个图片，图片的名称叫做`002.jpg`，那我们在`pubspec.yaml`文件里就要写如下代码进行声明。
+
+```yml
+  assets:
+    - images/002.jpg
+```
+
+有了声明后，我们就可以直接在项目中引用这个文件了。
+
+```dart
+import 'package:flutter/material.dart';
+
+void main()=>runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Image.asset('images/002.jpg'),
+    );
+  }
+}
+```
+
+#### Flutter的打包
+
+这节留着以后再尝试吧，目前用不到此功能。
+
+## 一些小实例
+
+#### 底部导航栏制作
+
+flutter create demo...                 创建新的flutter项目
+
+`..add()`是Dart语言的..语法，简单来说就是返回调用者本身。这里list后用了..add()，还会返回list，然后就一直使用..语法，能一直想list里增加widget元素。 最后我们调用了父类的`initState()`方法。
+
+`BottomNavigationBar`组件里提供了一个相应事件`onTap`，这个事件自带一个索引值`index`，通过索引值我们就可以和我们list里的索引值相对应了。
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'BottomNavigationWidget.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter BottomNaavigationBar',
+      theme: ThemeData.light(),
+      home: BottomNavigationWidget(),
+    );
+  }
+}
+
+```
+
+BottomNavigationWidget.dart
+
+使用`StatefulWidget`分为两个部分，第一个部分是继承与`StatefullWidget`，第二个部分是继承于`State`.其实`State`部分才是我们的重点，主要的代码都会写在`State`中。
+
+```dart
+import 'package:flutter/material.dart';
+import 'pages/airplay_screen.dart';
+import 'pages/email_screen.dart';
+import 'pages/pages_screen.dart';
+import 'pages/home_screen.dart';
+
+class BottomNavigationWidget extends StatefulWidget {     //快速构建 stful
+  @override
+  _BottomNavigationWidgetState createState() => _BottomNavigationWidgetState();
+}
+
+class _BottomNavigationWidgetState extends State<BottomNavigationWidget> {
+  final _BottomNavigationColor = Colors.blue; //内部使用一般用下划线开头
+  int _currentIndex = 0;
+  List<Widget> list = List();
+
+  @override
+  void initState() {
+    list
+      ..add(HomeScreen()) //相当于建造者模式  链式添加
+      ..add(EmailScreen())
+      ..add(PagesScreen())
+      ..add(AirplayScreen());
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: list[_currentIndex], //忘写这句了...
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.home,
+              color: _BottomNavigationColor,
+            ),
+           // ImageIcon(    //图片形式的icon
+              //AssetImage("images/myapp.png"),     
+              //NetworkImage('http://jingyile.cn/9.115.png'),   
+              
+            title: Text(
+              'home',
+              style: TextStyle(color: _BottomNavigationColor),
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.email,
+              color: _BottomNavigationColor,
+            ),
+            title:
+                Text('Email', style: TextStyle(color: _BottomNavigationColor)),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.pages,
+              color: _BottomNavigationColor,
+            ),
+            title:
+                Text('Pages', style: TextStyle(color: _BottomNavigationColor)),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.airplay,
+              color: _BottomNavigationColor,
+            ),
+            title: Text('AipPlay',
+                style: TextStyle(color: _BottomNavigationColor)),
+          ),
+        ],
+        currentIndex: _currentIndex,
+        onTap: (int index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        // type: BottomNavigationBarType.fixed   //这句可以控制显示效果
+      ),
+    );
+  }
+}
+```
+
+home_screen.dart
+
+```dart
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('home'),
+      ),
+      body: Center(
+          child: Text(
+            'Hello widget! hello world! hello yantai! hello mieyi! hello xiaoqi! hello  qiqi! ',
+            textAlign:TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            // 超出部分显示
+            style: TextStyle(
+              fontSize:25.0,
+              color:Color.fromARGB(255, 255, 125, 125),
+              //字体颜色
+            ),
+            ),
+        ),
+    );
+  }
+}
+```
+
+
+
+## 要实现的UI页面
+
+#### 底部标签   
+
+https://github.com/LiuC520/flutter_bottom_tab_bar
+
+
+
