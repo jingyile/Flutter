@@ -914,7 +914,7 @@ import 'pages/email_screen.dart';
 import 'pages/pages_screen.dart';
 import 'pages/home_screen.dart';
 
-class BottomNavigationWidget extends StatefulWidget {     //快速构建 stful
+class BottomNavigationWidget extends StatefulWidget {     //快速构建动态widget stful
   @override
   _BottomNavigationWidgetState createState() => _BottomNavigationWidgetState();
 }
@@ -1021,6 +1021,328 @@ class HomeScreen extends StatelessWidget {
   }
 }
 ```
+
+#### 不规则的底部工具栏
+
+mian.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'bottom_appBar_demo.dart';
+
+void main() => runApp(new MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      //自定义主题样本
+      theme: ThemeData(
+        primarySwatch: Colors.red, //很多，自测
+      ),
+      home: BottomAppBarDemo(),
+    );
+  }
+}
+```
+
+bottom_appBar_demo.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'each_view.dart';
+
+class BottomAppBarDemo extends StatefulWidget {
+  _BottomAppBarDemoState createState() => _BottomAppBarDemoState();
+}
+
+class _BottomAppBarDemoState extends State<BottomAppBarDemo> {
+  List<Widget> _eachView; //创建视图数组
+  int _index = 0; //数组索引，通过改变索引值改变视图
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _eachView = List();
+    _eachView..add(EachView('Home'))..add(EachView('Me'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _eachView[_index],
+      floatingActionButton: FloatingActionButton(
+        //FAB 可交互的浮动按钮
+        onPressed: () {
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (BuildContext context) {
+            return EachView('New Page');
+          }));
+        },
+        tooltip: 'Increment', // 提示 长按显示..
+        child: Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      //完全融合！！！
+      bottomNavigationBar: BottomAppBar(
+        // BottomNavigationBar为底部导航栏
+        // BottomAppBar为底部工具栏
+        color: Colors.red,
+        shape: CircularNotchedRectangle(),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            IconButton(
+                icon: Icon(Icons.home),
+                color: Colors.white,
+                onPressed: () {
+                  setState(() {
+                    _index = 0;
+                  });
+                }),
+            IconButton(
+                icon: Icon(Icons.airport_shuttle),
+                color: Colors.white,
+                onPressed: () {
+                  setState(() {
+                    _index = 1;
+                  });
+                }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+each_view.dart     动态widget代替上个实例的4个静态的
+
+```dart
+import 'package:flutter/material.dart';
+
+class EachView extends StatefulWidget {
+  String _title;
+  EachView(this._title);
+  @override
+  _EachViewState createState() => _EachViewState();
+}
+
+class _EachViewState extends State<EachView> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar:AppBar(title:Text(widget._title)),
+      body: Center(child:Text(widget._title)),
+    );
+  }
+}
+```
+
+示例：<img src="C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20200731154141130.png" alt="image-20200731154141130" style="zoom:50%;" />
+
+
+
+#### 路由跳转的动画效果
+
+原理：重写并继承`PageRouterBuilder`这个类里的`transitionsBuilder`方法。
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'pages.dart';
+
+void main()=>runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title:'Flutter Demo',
+      theme: new ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home:FirstPage()
+    );
+  }
+}
+```
+
+pages.dart
+
+elevation 属性：这个值是AppBar 滚动时的融合程度，一般有滚动时默认是4.0，现在设置成0.0，就是和也main完全融合了。
+
+```dart
+import 'package:flutter/material.dart';
+import 'custome_router.dart';
+
+class FirstPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        backgroundColor: Colors.blue,
+        appBar: AppBar(
+          title: Text('FirstPage', style: TextStyle(fontSize: 36.0)),
+          elevation: 0.0, //默认4.0 ，与底部button融合效果
+        ),
+        body: Center(
+          child: MaterialButton(
+            child: Icon(
+              Icons.navigate_next,
+              color: Colors.white,
+              size: 64.0,
+            ),
+            onPressed: () {
+              //  这段默认路由很基础，多写写记下来！！！
+              // Navigator.of(context).push(
+              //   MaterialPageRoute(
+              //     builder:(BuildContext context){
+              //        return SecondPage();
+              Navigator.of(context).push(CustomRoute(SecondPage())); //自定义路由
+            },
+          ),
+        ));
+  }
+}
+
+class SecondPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        backgroundColor: Colors.pinkAccent,
+        appBar: AppBar(
+          title: Text(
+            'SecondPage',
+            style: TextStyle(fontSize: 36.0),
+          ),
+          backgroundColor: Colors.pinkAccent,
+          leading: Container(), //文字居中
+          elevation: 4.0,    //！
+        ),
+        body: Center(
+          child: MaterialButton(
+            child: Icon(Icons.navigate_before, color: Colors.white, size: 64.0),
+            onPressed: () => Navigator.of(context).pop(),    //返回原页面
+          ),
+        ));
+  }
+}
+```
+
+custome_router.dart
+
+核心：重写并继承`PageRouterBuilder`这个类里的`transitionsBuilder`方法。
+
+- FadeTransition:渐隐渐现过渡效果，主要设置opactiy（透明度）属性，值是0.0-1.0。
+
+- animate :动画的样式，一般使用动画曲线组件（CurvedAnimation）。
+- curve: 设置动画的节奏，也就是常说的曲线，Flutter准备了很多节奏，通过改变动画取消可以做出很多不同的效果。
+- transitionDuration：设置动画持续的时间，建议再1和2之间。
+
+```dart
+import 'package:flutter/material.dart';
+
+class CustomRoute extends PageRouteBuilder {
+  final Widget widget;
+  CustomRoute(this.widget)
+      : super(
+            transitionDuration: const Duration(seconds: 1),  //持续时间
+            pageBuilder: (BuildContext context, Animation<double> animation1,
+                Animation<double> animation2) {
+              return widget;
+            },
+            transitionsBuilder: (BuildContext context,
+                Animation<double> animation1,
+                Animation<double> animation2,
+                Widget child) {
+              // 渐隐渐现的路由动画效果
+              return FadeTransition(
+                opacity: Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+                    parent: animation1, //父级动画
+                    curve: Curves.fastOutSlowIn //动画曲线 快出慢进
+                    )),
+                child: child,
+              );
+            });
+}
+```
+
+常用动画效果：
+
+缩放动画效果：
+
+```dart
+return ScaleTransition(
+  scale:Tween(begin:0.0,end:1.0).animate(CurvedAnimation(
+    parent:animation1,
+    curve: Curves.fastOutSlowIn
+    )),
+    child:child,
+);
+```
+
+旋转+缩放动画效果：
+
+```dart
+return RotationTransition(
+  turns:Tween(begin:0.0,end:1.0)
+  .animate(CurvedAnimation(
+    parent: animation1,
+    curve: Curves.fastOutSlowIn
+  )),
+  child:ScaleTransition(
+    scale:Tween(begin: 0.0,end:1.0)
+    .animate(CurvedAnimation(
+        parent: animation1,
+        curve:Curves.fastOutSlowIn
+    )),
+    child: child,
+  )
+);
+```
+
+左右滑动动画效果 (常用)
+
+```dart
+return SlideTransition(
+  position: Tween<Offset>(
+    begin: Offset(-1.0, 0.0),
+    end:Offset(0.0, 0.0)
+  )
+  .animate(CurvedAnimation(
+    parent: animation1,
+    curve: Curves.fastOutSlowIn
+  )),
+  child: child,
+);
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
