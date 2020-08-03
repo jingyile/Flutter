@@ -8,6 +8,8 @@ Flutter
 
 没有Mac 没有Android设备 555....
 
+入门和小实例参考代码来自技术胖的博客，https://jspang.com
+
 ## 最简单的入门
 
 #### 空模板（Hello World示例)
@@ -1324,6 +1326,650 @@ return SlideTransition(
 );
 ```
 
+#### 毛玻璃效果实现
+
+以后的开发中可能会用到，还是少用，对系统消耗较大。
+
+mian.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'frosted_glass_demo.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title:'Flutter Demo',
+      theme:ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home:Scaffold(
+        body:FrostedGlassDemo(),
+      )
+    );
+  }
+}
+```
+
+frosted_glass_demo.dart
+
+`BackdropFilter`就是背景滤镜组件，使用它可以给父元素增加滤镜效果，它里边最重要的一个属性是`filter`。 `filter`属性中要添加一个滤镜组件，实例中我们添加了图片滤镜组件，并给了模糊效果。
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:ui';   //引入ui库，因为ImageFilter Widget在这个里边。
+
+class FrostedGlassDemo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body:Stack(   //重叠的Stack Widget，实现重贴
+        children: <Widget>[
+          ConstrainedBox( //约束盒子组件，添加额外的限制条件到 child上。
+            constraints: const BoxConstraints.expand(), //限制条件，可扩展的。
+            child:Image.network('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1545738629147&di=22e12a65bbc6c4123ae5596e24dbc5d3&imgtype=0&src=http%3A%2F%2Fpic30.photophoto.cn%2F20140309%2F0034034413812339_b.jpg')
+          ),
+          Center(
+            child: ClipRect(  //裁切长方形
+              child: BackdropFilter(   //背景滤镜器
+                filter: ImageFilter.blur(sigmaX: 5.0,sigmaY: 5.0), //图片模糊过滤，横向竖向都设置5.0
+                child: Opacity( //透明控件
+                  opacity: 0.5,
+                  child: Container(// 容器组件
+                    width: 500.0,
+                    height: 700.0,.
+                    decoration: BoxDecoration(color:Colors.grey.shade200), //盒子装饰器，进行装饰，设置颜色为灰色
+                    child: Center(
+                      child: Text(
+                        'JSPang',
+                        style: Theme.of(context).textTheme.display3, //设置比较酷炫的字体
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )
+        ],
+      )
+    );
+  }
+}
+```
+
+#### 保持页面状态
+
+在工作中切换页面，再切换回来时,要求页面状态不发生改变。
+
+这能给APP浏览者最好的体验，几乎所有的APP都有这个需求，属于一个大众需求。
+
+这个demo没有路由跳转，先简单实现一下吧，后面用的时候再深究。
+
+with是dart的关键字，意思是混入的意思，就是说可以将一个或者多个类的功能添加到自己的类无需继承这些类， 避免多重继承导致的问题。
+
+需要注意的是with后边是Mixin，而不是普通的Widget   !!!
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'keep_alive_demo.dart';
+void main()=>runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme:ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home:KeepAliveDemo()
+    );
+  }
+} 
+
+class KeepAliveDemo extends StatefulWidget {
+  _KeepAliveDemoState createState() => _KeepAliveDemoState();
+}
+/*
+with是dart的关键字，意思是混入的意思，
+就是说可以将一个或者多个类的功能添加到自己的类无需继承这些类，
+避免多重继承导致的问题。
+SingleTickerProviderStateMixin 主要是我们初始化TabController时，
+需要用到vsync ，垂直属性，然后传递this
+*/
+class _KeepAliveDemoState extends State<KeepAliveDemo> with SingleTickerProviderStateMixin {
+  TabController _controller;
+
+  @override
+  void initState(){
+    super.initState();
+    _controller = TabController(length:3, vsync: this);
+  }
+
+  //重写被释放的方法，只释放TabController
+  @override
+  void dispose(){
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar:AppBar(
+        title:Text('Keep Alive Demo'),
+          //TabBar是切换组件，它需要设置两个属性。
+//controller: 控制器，后边跟的多是TabController组件。
+//tabs：具体切换项，是一个数组，里边放的也是Tab Widget。
+        bottom:TabBar(
+          controller: _controller,
+          tabs:[
+            Tab(icon:Icon(Icons.directions_car)),
+            Tab(icon:Icon(Icons.directions_transit)),
+            Tab(icon:Icon(Icons.directions_bike)),
+          ],
+        )
+      ),
+      body:TabBarView(
+        controller: _controller,
+        children: <Widget>[
+          MyHomePage(),
+          MyHomePage(),
+          MyHomePage()
+        ],
+      )
+    );
+  }
+}
+```
+
+keep_alive_demo.dart
+
+```dart
+import 'package:flutter/material.dart';
+
+class MyHomePage extends StatefulWidget {
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+//混入AutomaticKeepAliveClientMixin，这是保持状态的关键
+//然后重写wantKeppAlive 的值为true。
+class _MyHomePageState extends State<MyHomePage> with AutomaticKeepAliveClientMixin {
+  int _counter = 0;
+  //重写keepAlive 为ture ，就是可以有记忆功能了。
+  @override
+  bool get wantKeepAlive => true;
+  //声明一个内部方法，用来点击按钮后增加数量
+  void _incrementCounter(){
+    setState() => _counter++;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body:Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('点一下加1，点一下加1:'),
+            Text(
+              '$_counter',
+              style:Theme.of(context).textTheme.display1,
+            )
+          ],
+        ),
+      ),
+      //增加一个悬浮按钮，点击时触犯_incrementCounter方法
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+#### 一个不简单的搜索条
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'search_bar_demo.dart';
+
+void main() =>runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title:'Flutter Demo',
+      theme: ThemeData.light(),
+      home: SearchBarDemo()
+    );
+  }
+}
+```
+
+search_bar_demo.dart
+
+点击图标时执行`searchBarDelegate` 类，这个类继承与`SearchDelegate`类，继承后要重写里边的四个方法
+
+```dart
+import 'package:flutter/material.dart';
+import 'asset.dart';
+
+class SearchBarDemo extends StatefulWidget {
+  _SearchBarDemoState createState() => _SearchBarDemoState();
+}
+
+class _SearchBarDemoState extends State<SearchBarDemo> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: Text('SearchBarDemo'), actions: <Widget>[
+      IconButton(
+          icon: Icon(Icons.search),
+          onPressed: () {
+            showSearch(context: context, delegate: searchBarDelegate());
+          }
+          // showSearch(context:context,delegate: searchBarDelegate()),
+          ),
+    ]));
+  }
+}
+//点击图标时执行`searchBarDelegate` 类，这个类继承与`SearchDelegate`类，继承后要重写里边的四个方法
+
+class searchBarDelegate extends SearchDelegate<String> {
+//buildActions方法时搜索条右侧的按钮执行方法，我们在这里方法里放入一个clear图标。 当点击图片时，清空搜索的内容。
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () => query = "",
+      )
+    ];
+  }
+//buildLeading，这个是搜索栏左侧的图标和功能的编写，这里我们才用AnimatedIcon，然后在点击时关闭整个搜索页面
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+        icon: AnimatedIcon(
+            icon: AnimatedIcons.menu_arrow, progress: transitionAnimation),
+        onPressed: () => close(context, null));
+  }
+//buildResults方法，是搜到到内容后的展现，因为我们的数据都是模拟的，所以我这里就使用最简单的Container+Card组件进行演示了，不做过多的花式修饰了。
+  @override
+  Widget buildResults(BuildContext context) {
+    return Container(
+      width: 100.0,
+      height: 100.0,
+      child: Card(
+        color: Colors.redAccent,
+        child: Center(
+          child: Text(query),
+        ),
+      ),
+    );
+  }
+//buildSuggestions，这个方法主要的作用就是设置推荐，就是我们输入一个字，然后自动为我们推送相关的搜索结果，这样的体验是非常好的。
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestionList = query.isEmpty
+        ? recentSuggest
+        : searchList.where((input) => input.startsWith(query)).toList();
+    return ListView.builder(
+        itemCount: suggestionList.length,
+        itemBuilder: (context, index) => ListTile(
+              title: RichText(
+                  text: TextSpan(
+                      text: suggestionList[index].substring(0, query.length),
+                      style: TextStyle(
+                          color: Colors.black, fontWeight: FontWeight.bold),
+                      children: [
+                    TextSpan(
+                        text: suggestionList[index].substring(query.length),
+                        style: TextStyle(color: Colors.grey))
+                  ])),
+            ));
+  }
+}
+```
+
+asset.dart
+
+`asset.dart`相当于数据文件，工作中这些数据是后台传递给我们，或者写成配置文件的，这里我们就以List的方式代替了。我们在这个文件中定义了两个List：
+
+- searchList : 这个相当于数据库中的数据，我们要在这里进行搜索。
+- recentSuggest ： 目前的推荐数据，就是搜索时，自动为我们进行推荐。
+
+```dart
+const searchList = [
+  "jiejie-大长腿",
+  "jiejie-水蛇腰",
+  "gege1-帅气欧巴",
+  "gege2-小鲜肉"
+];
+
+const recentSuggest = [
+  "jiejie",
+  "gege"
+];
+```
+
+#### 模拟添加照片(流式布局)
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'warp_demo.dart';
+
+void main()=>runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: new ThemeData.dark(),
+      home:WarpDemo()
+    );
+  }
+}
+```
+
+warp_demo.dart
+
+```dart
+import 'package:flutter/material.dart';
+
+
+//继承与动态组件
+class WarpDemo extends StatefulWidget {
+  _WarpDemoState createState() => _WarpDemoState();
+}
+
+class _WarpDemoState extends State<WarpDemo> {
+  List<Widget> list;  //声明一个list数组
+
+  @override
+  //初始化状态，给list添加值，这时候调用了一个自定义方法`buildAddButton`
+  void initState() { 
+    super.initState();
+    list = List<Widget>()..add(buildAddButton());
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    //得到屏幕的高度和宽度，用来设置Container的宽和高
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
+
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Wrap流式布局'),
+      ),
+      body:Center(
+        child: Opacity(
+          opacity: 0.8,
+          child: Container(
+            width: width,
+            height: height/2,
+            color: Colors.grey,
+            child: Wrap(    //流式布局，
+              children: list,
+              spacing: 26.0,  //设置间距
+            ),
+          ),
+        ),
+      )
+    );
+  }
+
+  Widget buildAddButton(){
+    //返回一个手势Widget，只用用于显示事件
+    return  GestureDetector(
+      onTap:(){
+        if(list.length<9){
+          setState(() {
+                list.insert(list.length-1,buildPhoto());
+          });
+        }
+      },
+      child: Padding(
+        padding:const EdgeInsets.all(8.0),
+        child: Container(
+          width: 80.0,
+          height: 80.0,
+          color: Colors.black54,
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+
+
+  Widget buildPhoto(){
+    return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          width: 80.0,
+          height: 80.0,
+          color: Colors.amber,
+          child: Center(
+            child: Text('照片'),
+          ),
+        ),
+    );
+  }
+
+}
+```
+
+`GestureDetector`它是一个Widget，但没有任何的显示功能，而只是一个手势操作，用来触发事件的。虽然很多Button组件是有触发事件的，比如点击，但是也有一些组件是没有触发事件的，比如：Padding、Container、Center这时候我们想让它有触发事件就需要再它们的外层增加一个`GestureDetector`，比如我们让Padding有触发事件，代码如下：
+
+```dart
+Widget buildAddButton(){
+    return  GestureDetector(
+      onTap:(){
+        if(list.length<9){
+          setState(() {
+                list.insert(list.length-1,buildPhoto());
+          });
+        }
+      },
+      child: Padding(
+        padding:const EdgeInsets.all(8.0),
+        child: Container(
+          width: 80.0,
+          height: 80.0,
+          color: Colors.black54,
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+```
+
+#### Draggable控件实例
+
+main.dart 文件：
+
+```dart
+import 'package:flutter/material.dart';
+import 'draggable_demo.dart';
+
+void main() => runApp(new MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title:'Flutter Demo',
+      theme:ThemeData(
+        primarySwatch: Colors.blue
+      ),
+      home:DraggableDemo()
+    );
+  }
+}
+```
+
+draggable_demo.dart 文件
+
+`DragTarget`是用来接收拖拽事件的控件，当把`Draggable`放到`DragTarget`里时，他会接收`Draggable`传递过来的值，然后用生成器改变组件状态。
+
+- onAccept:当推拽到控件里时触发，经常在这里得到传递过来的值。
+- builder: 构造器，里边进行修改child值。 
+
+```dart
+import 'package:flutter/material.dart';
+
+import 'draggable_widget.dart';
+
+class DraggableDemo extends StatefulWidget {
+  @override
+  _DraggableDemoState createState() => _DraggableDemoState();
+}
+
+class _DraggableDemoState extends State<DraggableDemo> {
+  Color _draggableColor = Colors.grey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: Stack(
+      children: <Widget>[
+        DraggableWidget(
+          offset: Offset(80.0, 80.0),
+          widgetColor: Colors.tealAccent,
+        ),
+        DraggableWidget(
+          offset: Offset(180.0, 80.0),
+          widgetColor: Colors.redAccent,
+        ),
+        Center(
+            //接收
+          child: DragTarget(onAccept: (Color color) {
+            _draggableColor = color;
+          }, builder: (context, candidateData, rejectedData) {
+            return Container(
+              width: 200.0,
+              height: 200.0,
+              color: _draggableColor,
+            );
+          }),
+        )
+      ],
+    ));
+  }
+}
+```
+
+draggable_widget.dart 文件
+
+`Draggable`控件负责就是拖拽，父层使用了`Draggable`，它的子元素就是可以拖动的，子元素可以实容器，可以是图片。用起来非常的灵活。
+
+参数说明：
+
+- `data`: 是要传递的参数，在`DragTarget`里，会接受到这个参数。当然要在拖拽控件推拽到`DragTarget`的时候。
+- `child`:在这里放置你要推拽的元素，可以是容器，也可以是图片和文字。
+- `feedback`: 常用于设置推拽元素时的样子，在案例中当推拽的时候，我们把它的颜色透明度变成了50%。当然你还可以改变它的大小。
+- `onDraggableCanceled`:是当松开时的相应事件，经常用来改变推拽时到达的位置，改变时用`setState`来进行。
+
+```dart
+import 'package:flutter/material.dart';
+
+class DraggableWidget extends StatefulWidget {
+  final Offset offset;
+  final Color widgetColor;
+  const DraggableWidget({Key key, this.offset, this.widgetColor}):super(key:key);
+  _DraggableWidgetState createState() => _DraggableWidgetState();
+}
+
+class _DraggableWidgetState extends State<DraggableWidget> {
+  Offset offset = Offset(0.0,0.0);
+  @override
+  void initState() {
+    super.initState();
+    offset = widget.offset;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+   return Positioned(
+     left: offset.dx,
+     top:offset.dy,
+     child: Draggable(  //拖拽
+       data:widget.widgetColor,
+       child: Container(
+         width: 100,
+         height: 100,
+         color:widget.widgetColor,
+       ),
+       feedback:Container(
+         width: 100.0,
+         height: 100.0,
+         color: widget.widgetColor.withOpacity(0.5),
+       ),
+       onDraggableCanceled: (Velocity velocity, Offset offset){
+         setState(() {
+            this.offset = offset;
+         });
+       },
+     ),
+   );
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1350,7 +1996,7 @@ return SlideTransition(
 
 #### 底部标签   
 
-https://github.com/LiuC520/flutter_bottom_tab_bar
+参考：https://github.com/LiuC520/flutter_bottom_tab_bar
 
-
+我的实现：
 
