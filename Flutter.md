@@ -1998,5 +1998,294 @@ class _DraggableWidgetState extends State<DraggableWidget> {
 
 参考：https://github.com/LiuC520/flutter_bottom_tab_bar
 
-我的实现：
+我的实现：https://github.com/jingyile/Flutter_bottom_bar
+
+
+
+#### 启动页
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'splash_screen.dart';
+
+void main() =>runApp(MyApp()) ;
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'demo',
+      theme: ThemeData.light(),
+      home:SplashScreen()
+    );
+  }
+}
+```
+
+splash_screen.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'home_page.dart';
+
+class SplashScreen extends StatefulWidget {
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  AnimationController _controller;
+  Animation _animation;
+
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+        vsync: this, duration: Duration(milliseconds: 10000));
+    _animation = Tween(begin: 0.0, end: 1.0).animate(_controller);
+    /*动画事件监听器，
+    它可以监听到动画的执行状态，
+    这里只监听动画是否结束，
+    如果结束则执行页面跳转动作。 */
+    _animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => MyHomePage()),
+            (route) => route == null);
+      }
+    });
+    //播放动画
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    return FadeTransition(
+      //透明度动画组件
+      opacity: _animation, //执行动画
+      child: Image.asset(
+          //网络图片
+          'img/启动页.png',
+          // scale: 2.0,  //进行缩放
+          // width: width,
+          // height: height,
+          fit: BoxFit.cover // 充满父容器
+          ),
+    );
+  }
+}
+```
+
+home_page.dart
+
+```dart
+import 'package:flutter/material.dart';
+
+class MyHomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('首页')),
+      body: Center(
+        child: Text("我是首页"),
+      ),
+    );
+  }
+}
+```
+
+#### 登录页
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'login_page.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Sample App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: LoginPage(),
+    );
+  }
+}
+```
+
+login_page.dart
+
+```dart
+import 'package:flutter/material.dart';
+
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = new GlobalKey<FormState>();
+
+  String _userID;
+  String _password;
+  bool _isChecked = true;
+  bool _isLoading;
+  IconData _checkIcon = Icons.check_box;
+
+  void _changeFormToLogin() {
+    _formKey.currentState.reset();
+  }
+
+  void _onLogin() {
+    final form = _formKey.currentState;
+    form.save();
+
+    if (_userID == '') {
+      _showMessageDialog('账号不可为空');
+      return;
+    }
+    if (_password == '') {
+      _showMessageDialog('密码不可为空');
+      return;
+    } else {
+      _showMessageDialog('账号:' + _userID + '\n 密码:' + _password);
+      return;
+    }
+  }
+
+  void _showMessageDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text('提示'),
+          content: new Text(message),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("ok"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _showEmailInput() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(15.0, 10.0, 0.0, 0.0),
+      child: new TextFormField(
+        maxLines: 1,
+        obscureText: false, //是否是密码
+        autofocus: false,
+        style: TextStyle(
+          fontSize: 15,
+          color: Colors.grey[400],
+        ),
+        decoration: new InputDecoration(
+            hintText: '请输入手机号',
+            icon: ImageIcon(
+              AssetImage('img/登录页账号.png'),
+              color: Colors.grey[400],
+            )),
+        onSaved: (value) => _userID = value.trim(),
+      ),
+    );
+  }
+
+  Widget _showPasswordInput() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(15.0, 10.0, 0.0, 0.0),
+      child: new TextFormField(
+        maxLines: 1,
+        obscureText: true, //是否是密码
+        autofocus: false,
+        style: TextStyle(
+          fontSize: 15,
+          color: Colors.grey[400],
+        ),
+        decoration: new InputDecoration(
+            hintText: '请输入登录密码',
+            icon: ImageIcon(
+              AssetImage('img/登录页密码.png'),
+              color: Colors.grey[400],
+            )),
+        onSaved: (value) => _password = value.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: ListView(
+      children: <Widget>[
+        Container(
+          // height: 400,
+          padding: const EdgeInsets.fromLTRB(0, 200, 0, 0),
+          child: Image(
+            image: AssetImage('img/登录页图标.png'),
+            height: 70,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(45, 100, 55, 0),
+          child: Text(
+            '欢迎登录！',
+            style: TextStyle(
+              fontSize: 26,
+              color: Colors.blueGrey,
+            ),
+          ),
+        ),
+        Form(
+          key: _formKey,
+          child: Container(
+            height: 142,
+            padding: const EdgeInsets.fromLTRB(45, 20, 55, 0),
+            child: Column(
+              children: <Widget>[
+                _showEmailInput(),
+                _showPasswordInput(),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          height: 100,
+          padding: const EdgeInsets.fromLTRB(55, 50, 55, 0),
+          child: FlatButton(
+            child: Text('登录', style: TextStyle(fontSize: 18)),
+            textColor: Colors.white,
+            color: Colors.blue,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0)),
+            onPressed: () {
+              _onLogin();
+            },
+          ),
+        ),
+      ],
+    ));
+  }
+}
+```
 
