@@ -1945,7 +1945,146 @@ class _DraggableWidgetState extends State<DraggableWidget> {
 }
 ```
 
+#### Flutter中文网小实例
 
+pubspec.yml
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^0.1.3
+  english_words: ^3.1.0
+```
+
+main.dart
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:english_words/english_words.dart';
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '小熊饼干',
+      // theme: ThemeData.dark(),
+      theme: ThemeData(primarySwatch: Colors.orange),
+      home: RandomWords(),
+    );
+  }
+}
+
+class RandomWords extends StatefulWidget {
+  @override
+  _RandomWordsState createState() => _RandomWordsState();
+}
+
+class _RandomWordsState extends State<RandomWords> {
+  final _suggestions = <WordPair>[];                      //保存建议的单词对
+  final _biggerFont = const TextStyle(fontSize: 18.0);    //增大字体！
+  final _saved = new Set<WordPair>();                     //保存用户喜欢的单词对
+
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text('Startup Name Generator'),
+        actions: <Widget>[
+          new IconButton(icon: new Icon(Icons.favorite), onPressed: _pushSaved),
+        ],
+      ),
+      body: _buildSuggestions(),
+    );
+  }
+
+  void _pushSaved() {
+    Navigator.of(context).push(
+    new MaterialPageRoute(
+      builder: (context) {
+        final tiles = _saved.map(
+          (pair) {
+            return new ListTile(
+              title: new Text(
+                pair.asPascalCase,
+                style: _biggerFont,
+              ),
+            );
+          },
+        );
+        final divided = ListTile
+          .divideTiles(
+            context: context,
+            tiles: tiles,
+          )
+          .toList();
+          return new Scaffold(
+          appBar: new AppBar(
+            title: new Text('Saved Suggestions'),
+          ),
+          body: new ListView(children: divided),
+        );
+      },
+    ),
+    );
+  }
+
+//Tip: “驼峰命名法” (称为 “upper camel case” 或 “Pascal case” ), 表示字符串中的每个单词（包括第一个单词）都以大写字母开头。
+  Widget _buildRow(WordPair pair) {
+    final alreadySaved = _saved.contains(pair);
+    return new ListTile(
+      title: new Text(
+        pair.asPascalCase,
+        style: _biggerFont,
+      ),
+      trailing: new Icon(
+      alreadySaved ? Icons.favorite : Icons.favorite_border,
+      color: alreadySaved ? Colors.red : null,
+    ),
+    onTap: () {
+      setState(() {
+        if (alreadySaved) {
+          _saved.remove(pair);
+        } else {
+          _saved.add(pair);
+        }
+      });
+    },
+    );
+    
+  }
+
+  Widget _buildSuggestions() {    //构建显示建议单词对的ListView
+    return new ListView.builder(
+        padding: const EdgeInsets.all(16.0),
+        // 对于每个建议的单词对都会调用一次itemBuilder，然后将单词对添加到ListTile行中
+        // 在偶数行，该函数会为单词对添加一个ListTile row.
+        // 在奇数行，该函数会添加一个分割线widget，来分隔相邻的词对。
+        // 注意，在小屏幕上，分割线看起来可能比较吃力。
+        itemBuilder: (context, i) {
+          // 在每一列之前，添加一个1像素高的分隔线widget
+          if (i.isOdd) return new Divider();
+
+          // 语法 "i ~/ 2" 表示i除以2，但返回值是整形（向下取整），比如i为：1, 2, 3, 4, 5
+          // 时，结果为0, 1, 1, 2, 2， 这可以计算出ListView中减去分隔线后的实际单词对数量
+          final index = i ~/ 2;
+          // 如果是建议列表中最后一个单词对
+          if (index >= _suggestions.length) {
+            // ...接着再生成10个单词对，然后添加到建议列表
+            _suggestions.addAll(generateWordPairs().take(10));
+          }
+          return _buildRow(_suggestions[index]);
+          // return Text(_suggestions[index].asPascalCase);
+        });
+  }
+}
+```
 
 
 
@@ -2107,6 +2246,276 @@ const Scaffold({
 }) 
 ```
 
+#### AppBar
+
+```dart
+    AppBar({
+    Key key,
+    this.title,//Toolbar 中主要内容，通常显示为当前界面的标题文字
+    this.actions,//一个 Widget 列表，代表 Toolbar 中所显示的菜单，对于常用的菜单，通常使用 IconButton 来表示；对于不常用的菜单通常使用 PopupMenuButton 来显示为三个点，点击后弹出二级菜单
+    ---------------------------------------------不常用------------------------------------------------- 
+    this.leading,//在标题前面显示的一个控件，在首页通常显示应用的 logo；在其他界面通常显示为返回按钮
+    this.automaticallyImplyLeading = true,
+    this.flexibleSpace,//一个显示在 AppBar 下方的控件，高度和 AppBar 高度一样，可以实现一些特殊的效果，该属性通常在 SliverAppBar 中使用
+    this.bottom,//一个 AppBarBottomWidget 对象，通常是 TabBar。用来在 Toolbar 标题下面显示一个 Tab 导航栏
+    this.elevation = 4.0,//纸墨设计中控件的 z 坐标顺序，默认值为 4，对于可滚动的 SliverAppBar，当 SliverAppBar 和内容同级的时候，该值为 0， 当内容滚动 SliverAppBar 变为 Toolbar 的时候，修改 elevation 的值
+    this.backgroundColor,//APP bar 的颜色，默认值为 ThemeData.primaryColor。改值通常和下面的三个属性一起使用
+    this.brightness,//App bar 的亮度，有白色和黑色两种主题，默认值为 ThemeData.primaryColorBrightness
+    this.iconTheme,//App bar 上图标的颜色、透明度、和尺寸信息。默认值为 ThemeData.primaryIconTheme
+    this.textTheme,//App bar 上的文字样式。默认值为 ThemeData.primaryTextTheme
+    this.primary = true,
+    this.centerTitle,//标题是否居中显示，默认值根据不同的操作系统，显示方式不一样,true居中 false居左
+    this.titleSpacing = NavigationToolbar.kMiddleSpacing,
+    this.toolbarOpacity = 1.0,
+    this.bottomOpacity = 1.0,
+    })
+```
+
+#### Navigator
+
+`Navigator`是一个路由管理的组件，它提供了打开和退出路由页方法。
+
+`Navigator`通过一个栈来管理活动路由集合。通常当前屏幕显示的页面就是栈顶的路由。
+
+`Navigator`提供了一系列方法来管理路由栈，最常用的两个方法：
+
+Navigator类中第一个参数为context的**静态方法**都对应一个Navigator的**实例方法**，
+
+```dart
+Navigator.push(BuildContext context, Route route)  等价于
+Navigator.of(context).push(Route route)
+    
+Future push(BuildContext context, Route route)
+//将给定的路由入栈（即打开新的页面），返回值是一个`Future`对象，用以接收新路由出栈（即关闭）时的返回数据。
+bool pop(BuildContext context, [ result ])
+//将栈顶路由出栈，`result`为页面关闭时返回给上一个页面的数据。
+```
+
+#### MaterialPageRoute
+
+`MaterialPageRoute`继承自`PageRoute`类，`PageRoute`类是一个抽象类，表示占有整个屏幕空间的一个模态路由页面，它还定义了路由构建及切换时过渡动画的相关接口及属性。`MaterialPageRoute` 是Material组件库提供的组件，它可以针对不同平台，实现与平台页面切换动画风格一致的路由切换动画：
+
+- 对于Android，当打开新页面时，新的页面会从屏幕底部滑动到屏幕顶部；当关闭页面时，当前页面会从屏幕顶部滑动到屏幕底部后消失，同时上一个页面会显示到屏幕上。
+- 对于iOS，当打开页面时，新的页面会从屏幕右侧边缘一致滑动到屏幕左边，直到新页面全部显示到屏幕上，而上一个页面则会从当前屏幕滑动到屏幕左侧而消失；当关闭页面时，正好相反，当前页面会从屏幕右侧滑出，同时上一个页面会从屏幕左侧滑入。
+
+```dart
+MaterialPageRoute({
+    WidgetBuilder builder,//WidgetBuilder类型的回调函数，它的作用是构建路由页面的具体内容，返回值是一个widget。我们通常要实现此回调，返回新路由的实例。
+    ---------------------------------------------不常用-------------------------------------------------
+    RouteSettings settings,//包含路由的配置信息，如路由名称、是否初始路由（首页）。
+    bool maintainState = true,//默认情况下，当入栈一个新路由时，原来的路由仍然会被保存在内存中，如果想在路由没用的时候释放其所占用的所有资源，可以设置maintainState为false。
+    bool fullscreenDialog = false,//表示新的路由页面是否是一个全屏的模态对话框
+    //在iOS中，如果fullscreenDialog为true，新页面将会从屏幕底部滑入（而不是水平方向）。
+  })
+```
+
+#### Text
+
+```dart
+const Text(this.data, // 内容
+{
+  Key key,
+  this.textAlign, // 对齐方式
+  this.overflow, // 超出屏幕显示方式
+  this.maxLines, // 最大行数
+  this.style, // 样式
+  ---------------------------------------------不常用-------------------------------------------------
+  this.strutStyle, // 使用的支柱风格
+  this.textDirection, // 文本方向
+  this.locale, //
+  this.softWrap, // 是否允许换行显示
+  this.textScaleFactor, // 每个逻辑像素的字体像素数，
+  this.semanticsLabel, // 文本的另一个语义标签
+})
+
+// 可以显示不同样式textSpan的段落。
+const Text.rich(this.textSpan, {
+  Key key,
+  this.style,
+  this.strutStyle,
+  this.textAlign,
+  this.textDirection,
+  this.locale,
+  this.softWrap,
+  this.overflow,
+  this.textScaleFactor,
+  this.maxLines,
+  this.semanticsLabel,
+})
+
+// 需配合Text.rich一起使用
+const TextSpan({
+  this.style,   //样式
+  this.text,   //内容
+  this.children,  //一个TextSpan的数组，也就是说TextSpan可以包括其他TextSpan
+  this.recognizer, //用于对该文本片段上用于手势进行识别处理
+});
+```
+
+#### TextStyle
+
+```dart
+const TextStyle({
+  this.inherit = true,//是否继承父 Text 的样式，默认为 true 如果为false，且样式没有设置具体的值，则采用默认值
+  this.color, // 字体颜色
+  this.fontSize, // 字体大小
+  this.decoration, // 装饰
+  this.decorationColor,// 装饰颜色
+  this.decorationStyle, // 装饰样式
+  ---------------------------------------------不常用-------------------------------------------------  
+  this.fontWeight, 
+  this.fontStyle,  
+  this.letterSpacing, // 字间距
+  this.wordSpacing, // 字符间距
+  this.textBaseline,
+  this.height, // 行高
+  this.locale,
+  this.foreground, // 前景色
+  this.background, // 背景色
+  this.shadows, // 阴影
+  this.debugLabel,
+  String fontFamily, // 字体
+  List<String> fontFamilyFallback,
+  String package,
+})
+```
+
+#### Container
+
+`Container`是一个组合类容器，它本身不对应具体的`RenderObject`，它是`DecoratedBox`、`ConstrainedBox、Transform`、`Padding`、`Align`等组件组合的一个多功能容器，所以我们只需通过一个`Container`组件可以实现同时需要装饰、变换、限制的场景。
+
+```dart
+Container({
+  this.child,
+  this.alignment,
+  double width,//容器的宽度
+  double height, //容器的高度
+  this.padding, //容器内补白，属于decoration的装饰范围
+  this.margin,//容器外补白，不属于decoration的装饰范围
+  Color color, // 背景色
+  ---------------------------------------------不常用------------------------------------------------- 
+  Decoration decoration, // 背景装饰    
+  Decoration foregroundDecoration, //前景装饰
+  BoxConstraints constraints, //容器大小的限制条件
+  this.transform, //变换
+})
+```
+
+- 容器的大小可以通过`width`、`height`属性来指定，也可以通过`constraints`来指定；如果它们同时存在时，`width`、`height`优先。实际上Container内部会根据`width`、`height`来生成一个`constraints`。
+- `color`和`decoration`是互斥的，如果同时设置它们则会报错！实际上，当指定`color`时，`Container`内会自动创建一个`decoration`。
+
+#### ListView
+
+emmm,先简单参考入门篇
+
+`ListView`是最常用的可滚动组件之一，它可以沿一个方向线性排布所有子组件，并且它也支持基于Sliver的延迟构建模型。
+
+```dart
+ListView({
+  ...  
+  //可滚动widget公共参数
+  Axis scrollDirection = Axis.vertical,  //默认竖向
+  //  scrollDirection: Axis.horizontal, //横向
+  //  scrollDirection: Axis.vertical,  //竖向
+  bool reverse = false,
+  ScrollController controller,
+  bool primary,
+  ScrollPhysics physics,
+  EdgeInsetsGeometry padding,
+
+  //ListView各个构造函数的共同参数  
+  double itemExtent,
+  bool shrinkWrap = false,
+  bool addAutomaticKeepAlives = true,
+  bool addRepaintBoundaries = true,
+  double cacheExtent,
+
+  //子widget列表
+  List<Widget> children = const <Widget>[], //！！！
+})
+```
+
+可滚动组件通过一个List来作为其children属性时，只适用于子组件较少的情况，这是一个通用规律，并非`ListView`自己的特性，像`GridView`也是如此。
+
+`ListView.builder`适合列表项比较多（或者无限）的情况，因为只有当子组件真正显示的时候才会被创建，也就说通过该构造函数创建的`ListView`是支持基于Sliver的懒加载模型的。
+
+```dart
+ListView.builder({
+  // ListView公共参数已省略  
+  ...
+  @required IndexedWidgetBuilder itemBuilder,
+  int itemCount,
+  ...
+})
+```
+
+- `itemBuilder`：它是列表项的构建器，类型为`IndexedWidgetBuilder`，返回值为一个widget。当列表滚动到具体的`index`位置时，会调用该构建器构建列表项。
+- `itemCount`：列表项的数量，如果为`null`，则为无限列表
+
+小例子：
+
+```dart
+ListView.builder(
+    itemCount: 100,
+    itemExtent: 50.0, //强制高度为50.0
+    itemBuilder: (BuildContext context, int index) {
+      return ListTile(title: Text("$index"));
+    }
+);
+```
+
+
+
+#### ListTile
+
+```dart
+const ListTile({
+    Key key,
+    this.leading,              // item 前置图标
+    this.title,                // item 标题
+    ---------------------------------------------不常用------------------------------------------------- 
+    this.subtitle,             // item 副标题
+    this.trailing,             // item 后置图标
+    this.isThreeLine = false,  // item 是否三行显示
+    this.dense,                // item 直观感受是整体大小
+    this.contentPadding,       // item 内容内边距
+    this.enabled = true,
+    this.onTap,                // item onTap 点击事件
+    this.onLongPress,          // item onLongPress 长按事件
+    this.selected = false,     // item 是否选中状态
+  })
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2130,6 +2539,10 @@ const Scaffold({
 参考：https://github.com/LiuC520/flutter_bottom_tab_bar
 
 我的实现：https://github.com/jingyile/Flutter_bottom_bar
+
+#### 图标库
+
+https://material.io/resources/icons
 
 
 
