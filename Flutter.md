@@ -889,6 +889,8 @@ class MyApp extends StatelessWidget {
 
 flutter create demo...                 创建新的flutter项目
 
+flutter packages get      拉取packages到本地，实现了强大的库管理功能。
+
 `..add()`是Dart语言的..语法，简单来说就是返回调用者本身。这里list后用了..add()，还会返回list，然后就一直使用..语法，能一直想list里增加widget元素。 最后我们调用了父类的`initState()`方法。
 
 `BottomNavigationBar`组件里提供了一个相应事件`onTap`，这个事件自带一个索引值`index`，通过索引值我们就可以和我们list里的索引值相对应了。
